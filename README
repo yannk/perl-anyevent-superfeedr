@@ -4,6 +4,13 @@ NOTES
 
 see installation notes below.
 
+- This is still WIP
+- Since Superfeedr has a PubSub implementation bug, it requires a
+  AnyEvent::XMPP patch [*]
+- It also requires a patch to split_uri [*]
+
+[*] see http://github.com/yannk/perl-anyevent-xmpp/
+
 INSTALLATION
 
 AnyEvent::Superfeedr installation is straightforward. If your CPAN shell is set up,

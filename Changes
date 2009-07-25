@@ -1,0 +1,4 @@
+Revision history for Perl extension AnyEvent::Superfeedr
+
+0.01  Fri Jul 24 21:58:34 2009
+        - Initial version that doesn't do much 

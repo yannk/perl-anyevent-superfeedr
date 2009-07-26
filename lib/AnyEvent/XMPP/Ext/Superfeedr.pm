@@ -5,6 +5,8 @@ use warnings;
 use AnyEvent::Superfeedr::Notification;
 use base qw/AnyEvent::XMPP::Ext::Pubsub/;
 
+use constant NS => 'http://superfeedr.com/xmpp-pubsub-ext';
+
 =pod
 
 Fires up Pubsub event's plus 2 new events:
@@ -29,12 +31,13 @@ sub handle_incoming_pubsub_event {
     my (@items, $status_node);
     my ($code, $next_fetch, $feed_uri);
 
-    if ( $status_node = $node->find_all ([qw/pubsub_ev status/]) ) {
-        my $http_node = $status_node->find_all([ 'http' ]);
-        $code = $http_node ? $http_node->attr('code') : undef;
-        my $next_fetch_node = $status_node->find_all([ 'next_fetch' ]);
-        $next_fetch = $next_fetch_node ? $next_fetch_node->text : undef;
-        $feed_uri = $status_node->attr('feed');
+    if ( ($status_node) = $node->find_all([NS, 'status'])) {
+        my ($http_node)       = $status_node->find_all([NS, 'http' ]);
+        my ($next_fetch_node) = $status_node->find_all([NS, 'next_fetch' ]);
+
+        $code       = $http_node       ? $http_node->attr('code') : undef;
+        $next_fetch = $next_fetch_node ? $next_fetch_node->text   : undef;
+        $feed_uri   = $status_node->attr('feed');
 
         my $status = {
             http_status => $code,
@@ -43,7 +46,7 @@ sub handle_incoming_pubsub_event {
         };
         $self->event(superfeedr_status => $status);
     }
-    if ( my ($q) = $node->find_all ([qw/pubsub_ev items/]) ) {
+    if ( my ($q) = $node->find_all([qw/ pubsub_ev items /]) ) {
         foreach($q->find_all ([qw/pubsub_ev item/])) {
             push @items, $_;
         }

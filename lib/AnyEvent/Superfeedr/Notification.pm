@@ -19,6 +19,7 @@ sub entries {
         my $ae = XML::Atom::Entry->new(Stream => \$str);
         push @entries, $ae;
     }
+    $notification->{items} = undef; # XXX ?
     $notification->{_entries} = \@entries;
     return @{ $notification->{_entries} };
 }

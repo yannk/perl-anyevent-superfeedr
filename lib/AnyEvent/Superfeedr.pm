@@ -8,8 +8,9 @@ our $VERSION = '0.01';
 use Carp;
 
 use AnyEvent;
-#use AnyEvent::Superfeedr::Notification;
+use AnyEvent::Superfeedr::Notification;
 use AnyEvent::XMPP::Client;
+use AnyEvent::XMPP::Ext::Superfeedr;
 use AnyEvent::XMPP::Ext::Pubsub;
 use XML::Atom::Entry;
 
@@ -76,7 +77,7 @@ sub new {
     $cl->add_account($jid, $pass, undef, undef, {
         dont_retrieve_roster => 1,
     });
-    $cl->add_extension(my $ps = AnyEvent::XMPP::Ext::Pubsub->new);
+    $cl->add_extension(my $ps = AnyEvent::XMPP::Ext::Superfeedr->new);
     $superfeedr->{xmpp_pubsub} = $ps;
 
     my $on_error = $filtered{on_error} || sub {
@@ -100,17 +101,10 @@ sub new {
     );
     if (my $on_notification = $filtered{on_notification} ) {
         $ps->reg_cb(
-            pubsub_recv => sub {
+            superfeedr_notification => sub {
                 my $ps = shift;
-                my @items = @_;
-                for my $item (@items) {
-                    ## each item as one entry
-                    my ($entry) = $item->nodes;
-                    ## there must be more efficient ways? XXX
-                    my $str = $entry->as_string;
-                    my $ae = XML::Atom::Entry->new(Stream => \$str);
-                    $on_notification->($ae);
-                }
+                my $notification = shift;
+                $on_notification->($notification);
             },
         );
     }
@@ -158,6 +152,11 @@ AnyEvent::Superfeedr - XMPP interface to Superfeedr service.
   $n = 0;
   $callback = sub {
       my Net::Superfeedr::Notification $notification = shift;
+      my $feed_uri    = $notification->feed_uri;
+      my $http_status = $notification->http_status;
+      my $next_fetch  = $notification->next_fetch;
+      printf "status %s for %s. next: %s\n",
+              $http_status, $feed_uri, $next_fetch;
       for my XML::Atom::Entry $entry ($notification->entries) {
           printf "Got: %s\n" $entry->title;
       }

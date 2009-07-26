@@ -17,16 +17,19 @@ my $sf = AnyEvent::Superfeedr->new(
     #    cb => sub { [ "http://blog.cyberion.net/atom.xml"] },
     #},
     on_notification => sub { 
-        my $entry = shift;
-        my $title = Encode::decode_utf8($entry->title); 
-        $title =~ s/\s+/ /gs;
+        my $notification = shift;
 
-        my $l = length $title;
-        my $max = 50;
-        if ($l > $max) {
-            substr $title, $max - 3, $l - $max + 3, '...';
+        for my $entry ($notification->entries) {
+            my $title = Encode::decode_utf8($entry->title); 
+            $title =~ s/\s+/ /gs;
+
+            my $l = length $title;
+            my $max = 50;
+            if ($l > $max) {
+                substr $title, $max - 3, $l - $max + 3, '...';
+            }
+            printf "~ %-50s\n", $title;
         }
-        printf "~ %-50s\n", $title;
     },
 );
 $end->recv;

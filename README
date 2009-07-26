@@ -11,6 +11,9 @@ see installation notes below.
 
 [*] see http://github.com/yannk/perl-anyevent-xmpp/
 
+USAGE:
+
+
 INSTALLATION
 
 AnyEvent::Superfeedr installation is straightforward. If your CPAN shell is set up,

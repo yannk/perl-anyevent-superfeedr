@@ -96,7 +96,7 @@ sub new {
         connect_error => sub {
             my ($account, $reason) = @_;
             my $jid = $account->bare_jid;
-            croak "connection error for $jid: $reason";
+            $on_error->("connection error for $jid: $reason");
         },
     );
     if (my $on_notification = $filtered{on_notification} ) {

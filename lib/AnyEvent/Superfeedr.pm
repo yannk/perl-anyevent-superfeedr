@@ -178,7 +178,9 @@ sub unsubscribe {
 
 sub xmpp_node_uri {
     my $enc_feed = URI::Escape::uri_escape_utf8(shift, "\x00-\x1f\x7f-\xff");
-    return "xmpp:$SERVICE?;node=$enc_feed";
+    # work around what I think is a but in AnyEvent::XMPP
+    #return "xmpp:$SERVICE?;node=$enc_feed";
+    return "xmpp:$SERVICE?sub;node=$enc_feed";
 }
 
 sub xmpp_pubsub {

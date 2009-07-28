@@ -13,6 +13,7 @@ use AnyEvent::XMPP::Client;
 use AnyEvent::XMPP::Ext::Superfeedr;
 use AnyEvent::XMPP::Ext::Pubsub;
 use XML::Atom::Entry;
+use URI::Escape();
 
 use constant DEFAULT_SUB_IV => 60;
 
@@ -20,10 +21,12 @@ our $SERVICE = 'firehoser.superfeedr.com';
 
 # TODO:
 # debug
-# tests
+# tests? worthwhile?
 # on_error
 # better error handling
-# (maybe) pubsub
+# unsub case
+#
+# Also, maybe more direct callbacks for sub/unsub
 
 sub new {
     my $class = shift;
@@ -56,9 +59,9 @@ sub new {
                 return;
             }
             my $res_cb = sub {}; # XXX
-            # XXX also could do a huge list in eone slump
+            # XXX also could do a huge list in one slump
             for my $feed (@$list) {
-                my $enc_feed = $feed; # XXX
+                my $enc_feed = URI::Escape::uri_escape_utf8($feed);
                 my $xmpp_uri = "xmpp:$SERVICE?;node=$enc_feed";
                 $pubsub->subscribe_node($con, $xmpp_uri, $res_cb);
             }

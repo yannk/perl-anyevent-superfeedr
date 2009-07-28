@@ -49,10 +49,6 @@ sub new {
         warn "Error: " . $err->string;
     };
 
-    my $res_cb = sub {
-        my $err = shift;
-        $on_error->($err) if $err;
-    };
     if (my $s = $filtered{subscription}) {
         my $sub_cb = $s->{sub_cb}
             or croak "subscription needs to pass a 'sub_cb' callback";
@@ -70,9 +66,7 @@ sub new {
             }
             # XXX also could do a huge list in one slump
             for my $feed (@$list) {
-                my $enc_feed = encode_feed_uri($feed);
-                my $xmpp_uri = "xmpp:$SERVICE?;node=$enc_feed";
-                $pubsub->subscribe_node($con, $xmpp_uri, $res_cb);
+                $superfeedr->subscribe($feed);
             }
         };
         $superfeedr->{sub_timer} = AnyEvent->timer(
@@ -91,9 +85,7 @@ sub new {
                 }
                 # XXX also could do a huge list in one slump
                 for my $feed (@$list) {
-                    my $enc_feed = encode_feed_uri($feed);
-                    my $xmpp_uri = "xmpp:$SERVICE?;node=$enc_feed";
-                    $pubsub->unsubscribe_node($con, $xmpp_uri, $res_cb);
+                    $superfeedr->unsubscribe($feed);
                 }
             };
             $superfeedr->{unsub_timer} = AnyEvent->timer(
@@ -143,8 +135,53 @@ sub new {
     return $superfeedr;
 }
 
-sub encode_feed_uri {
-    URI::Escape::uri_escape_utf8(shift, "\x00-\x1f\x7f-\xff");
+sub subscribe {
+    my $superfeedr = shift;
+    my ($feed_uri) = @_;
+    my $pubsub = $superfeedr->xmpp_pubsub;
+    unless ($pubsub) {
+        $superfeedr->event(error => "no pubsub extension available");
+        return;
+    }
+    my $con = $superfeedr->xmpp_connection;
+    unless ($con) {
+        $superfeedr->event(error => "Wait to be connected");
+        return;
+    }
+    my $res_cb = sub {
+        my $err = shift;
+        $superfeedr->event(error => $err) if $err;
+    };
+    my $xmpp_uri = xmpp_node_uri($feed_uri);
+    $pubsub->subscribe_node($con, $xmpp_uri, $res_cb);
+    return;
+}
+
+sub unsubscribe {
+    my $superfeedr = shift;
+    my ($feed_uri) = @_;
+    my $pubsub = $superfeedr->xmpp_pubsub;
+    unless ($pubsub) {
+        $superfeedr->event(error => "no pubsub extension available");
+        return;
+    }
+    my $con = $superfeedr->xmpp_connection;
+    unless ($con) {
+        $superfeedr->event(error => "Wait to be connected");
+        return;
+    }
+    my $res_cb = sub {
+        my $err = shift;
+        $superfeedr->event(error => $err) if $err;
+    };
+    my $xmpp_uri = xmpp_node_uri($feed_uri);
+    $pubsub->unsubscribe_node($con, $xmpp_uri, $res_cb);
+    return;
+}
+
+sub xmpp_node_uri {
+    my $enc_feed = URI::Escape::uri_escape_utf8(shift, "\x00-\x1f\x7f-\xff");
+    return "xmpp:$SERVICE?;node=$enc_feed";
 }
 
 sub xmpp_pubsub {
@@ -207,6 +244,9 @@ AnyEvent::Superfeedr - XMPP interface to Superfeedr service.
       },
       on_notification => $callback,
   );
+
+  $superfeedr->subscribe($feed_uri);
+  $superfeedr->unsubscribe($feed_uri);
 
   $end->recv;
 

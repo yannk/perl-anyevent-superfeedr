@@ -70,7 +70,7 @@ sub new {
             }
             # XXX also could do a huge list in one slump
             for my $feed (@$list) {
-                my $enc_feed = URI::Escape::uri_escape_utf8($feed);
+                my $enc_feed = encode_feed_uri($feed);
                 my $xmpp_uri = "xmpp:$SERVICE?;node=$enc_feed";
                 $pubsub->subscribe_node($con, $xmpp_uri, $res_cb);
             }
@@ -91,7 +91,7 @@ sub new {
                 }
                 # XXX also could do a huge list in one slump
                 for my $feed (@$list) {
-                    my $enc_feed = URI::Escape::uri_escape_utf8($feed);
+                    my $enc_feed = encode_feed_uri($feed);
                     my $xmpp_uri = "xmpp:$SERVICE?;node=$enc_feed";
                     $pubsub->unsubscribe_node($con, $xmpp_uri, $res_cb);
                 }
@@ -141,6 +141,10 @@ sub new {
     $cl->start;
 
     return $superfeedr;
+}
+
+sub encode_feed_uri {
+    URI::Escape::uri_escape_utf8(shift, "\x00-\x1f\x7f-\xff");
 }
 
 sub xmpp_pubsub {

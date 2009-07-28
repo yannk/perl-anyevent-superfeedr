@@ -12,9 +12,11 @@ my $end = AnyEvent->condvar;
 my $sf = AnyEvent::Superfeedr->new(
     jid => shift,
     password => shift,
+    # bogus for my tests
     #subscription => {
     #    interval => 5,
-    #    cb => sub { [ "http://blog.cyberion.net/atom.xml"] },
+    #    sub_cb => sub { [ "firehoser.superfeedr.com" ] },
+    #    unsub_cb => sub { [ "", undef, '""', "*" ] },
     #},
     on_notification => sub { 
         my $notification = shift;

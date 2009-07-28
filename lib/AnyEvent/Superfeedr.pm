@@ -44,13 +44,23 @@ sub new {
         password => $filtered{password},
     }, ref $class || $class;
 
-    if (my $s = $filtered{subscription}) {
-        my $cb = $s->{cb}
-            or croak "subscription needs to pass a 'cb' callback";
-        my $iv = $s->{interval} || DEFAULT_SUB_IV;
+    my $on_error = $filtered{on_error} || sub {
+        my $err = shift;
+        warn "Error: " . $err->string;
+    };
 
-        my $timer_cb = sub {
-            my $list = $cb->($superfeedr);
+    my $res_cb = sub {
+        my $err = shift;
+        $on_error->($err) if $err;
+    };
+    if (my $s = $filtered{subscription}) {
+        my $sub_cb = $s->{sub_cb}
+            or croak "subscription needs to pass a 'sub_cb' callback";
+        my $iv = $s->{interval} || DEFAULT_SUB_IV;
+        my $unsub_cb = $s->{unsub_cb};
+
+        my $timer_sub_cb = sub {
+            my $list = $sub_cb->($superfeedr);
             return unless $list && @$list;
             my $pubsub = $superfeedr->xmpp_pubsub;
             my $con    = $superfeedr->xmpp_connection;
@@ -58,7 +68,6 @@ sub new {
                 warn "Not connected yet?";
                 return;
             }
-            my $res_cb = sub {}; # XXX
             # XXX also could do a huge list in one slump
             for my $feed (@$list) {
                 my $enc_feed = URI::Escape::uri_escape_utf8($feed);
@@ -67,8 +76,30 @@ sub new {
             }
         };
         $superfeedr->{sub_timer} = AnyEvent->timer(
-            after => $iv, interval => $iv, cb => $timer_cb,
+            after => $iv, interval => $iv, cb => $timer_sub_cb,
         );
+
+        if ($unsub_cb) {
+            my $timer_unsub_cb = sub {
+                my $list = $unsub_cb->($superfeedr);
+                return unless $list && @$list;
+                my $pubsub = $superfeedr->xmpp_pubsub;
+                my $con    = $superfeedr->xmpp_connection;
+                unless ($pubsub && $con) {
+                    warn "Not connected yet?";
+                    return;
+                }
+                # XXX also could do a huge list in one slump
+                for my $feed (@$list) {
+                    my $enc_feed = URI::Escape::uri_escape_utf8($feed);
+                    my $xmpp_uri = "xmpp:$SERVICE?;node=$enc_feed";
+                    $pubsub->unsubscribe_node($con, $xmpp_uri, $res_cb);
+                }
+            };
+            $superfeedr->{unsub_timer} = AnyEvent->timer(
+                after => $iv, interval => $iv, cb => $timer_unsub_cb,
+            );
+        }
     }
     my $cl   = AnyEvent::XMPP::Client->new(
         debug => $superfeedr->{debug},
@@ -82,10 +113,6 @@ sub new {
     });
     $cl->add_extension(my $ps = AnyEvent::XMPP::Ext::Superfeedr->new);
     $superfeedr->{xmpp_pubsub} = $ps;
-
-    my $on_error = $filtered{on_error} || sub {
-        croak "Error: ". $_[2]->string;
-    };
 
     $cl->reg_cb(
         error => $on_error, 
@@ -171,7 +198,8 @@ AnyEvent::Superfeedr - XMPP interface to Superfeedr service.
       password => $password
       subscription => {
           interval => 5,
-          cb       => \%get_new_feeds,
+          sub_cb   => \%get_new_feeds,
+          unsub_cb => \%get_feeds2delete,
       },
       on_notification => $callback,
   );

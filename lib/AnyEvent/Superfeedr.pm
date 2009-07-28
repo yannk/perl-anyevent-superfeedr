@@ -22,9 +22,6 @@ our $SERVICE = 'firehoser.superfeedr.com';
 # TODO:
 # debug
 # tests? worthwhile?
-# on_error
-# better error handling
-# unsub case
 #
 # Also, maybe more direct callbacks for sub/unsub
 

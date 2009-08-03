@@ -15,8 +15,6 @@ use AnyEvent::XMPP::Ext::Pubsub;
 use XML::Atom::Entry;
 use URI::Escape();
 
-use constant DEFAULT_SUB_IV => 60;
-
 our $SERVICE = 'firehoser.superfeedr.com';
 
 # TODO:
@@ -30,7 +28,7 @@ sub new {
     my %param = @_;
 
     my %filtered;
-    for ( qw{jid password debug subscription on_notification on_error} ) {
+    for ( qw{jid password debug on_notification on_connect on_disconnect on_error} ) {
         $filtered{$_} = delete $param{$_};
     }
     croak "Unknown option(s): " . join ", ", keys %param if keys %param;
@@ -43,53 +41,9 @@ sub new {
 
     my $on_error = $filtered{on_error} || sub {
         my $err = shift;
-        warn "Error: " . $err->string;
+        warn "Error: " . $err;
     };
 
-    if (my $s = $filtered{subscription}) {
-        my $sub_cb = $s->{sub_cb}
-            or croak "subscription needs to pass a 'sub_cb' callback";
-        my $iv = $s->{interval} || DEFAULT_SUB_IV;
-        my $unsub_cb = $s->{unsub_cb};
-
-        my $timer_sub_cb = sub {
-            my $list = $sub_cb->($superfeedr);
-            return unless $list && @$list;
-            my $pubsub = $superfeedr->xmpp_pubsub;
-            my $con    = $superfeedr->xmpp_connection;
-            unless ($pubsub && $con) {
-                warn "Not connected yet?";
-                return;
-            }
-            # XXX also could do a huge list in one slump
-            for my $feed (@$list) {
-                $superfeedr->subscribe($feed);
-            }
-        };
-        $superfeedr->{sub_timer} = AnyEvent->timer(
-            after => $iv, interval => $iv, cb => $timer_sub_cb,
-        );
-
-        if ($unsub_cb) {
-            my $timer_unsub_cb = sub {
-                my $list = $unsub_cb->($superfeedr);
-                return unless $list && @$list;
-                my $pubsub = $superfeedr->xmpp_pubsub;
-                my $con    = $superfeedr->xmpp_connection;
-                unless ($pubsub && $con) {
-                    warn "Not connected yet?";
-                    return;
-                }
-                # XXX also could do a huge list in one slump
-                for my $feed (@$list) {
-                    $superfeedr->unsubscribe($feed);
-                }
-            };
-            $superfeedr->{unsub_timer} = AnyEvent->timer(
-                after => $iv, interval => $iv, cb => $timer_unsub_cb,
-            );
-        }
-    }
     my $cl   = AnyEvent::XMPP::Client->new(
         debug => $superfeedr->{debug},
     );
@@ -104,13 +58,13 @@ sub new {
     $superfeedr->{xmpp_pubsub} = $ps;
 
     $cl->reg_cb(
-        error => $on_error, 
+        error => $on_error,
         connected => sub {
             $superfeedr->{xmpp_client} = $cl;
+            $filtered{on_connect}->() if $filtered{on_connect};
         },
         disconnect => sub {
-            my ($account, $host, $port) = @_;
-            warn "Got Disconnected from $host:$port\n";
+            ($filtered{on_disconnect} || sub { warn "Got disconnected from $_[1]:$_[2]" })->(@_);
         },
         connect_error => sub {
             my ($account, $reason) = @_;
@@ -134,29 +88,19 @@ sub new {
 
 sub subscribe {
     my $superfeedr = shift;
-    my ($feed_uri) = @_;
-    my $pubsub = $superfeedr->xmpp_pubsub;
-    unless ($pubsub) {
-        $superfeedr->event(error => "no pubsub extension available");
-        return;
-    }
-    my $con = $superfeedr->xmpp_connection;
-    unless ($con) {
-        $superfeedr->event(error => "Wait to be connected");
-        return;
-    }
-    my $res_cb = sub {
-        my $err = shift;
-        $superfeedr->event(error => $err) if $err;
-    };
-    my $xmpp_uri = xmpp_node_uri($feed_uri);
-    $pubsub->subscribe_node($con, $xmpp_uri, $res_cb);
-    return;
+    $superfeedr->pubsub_method('subscribe_node', @_);
 }
 
 sub unsubscribe {
     my $superfeedr = shift;
-    my ($feed_uri) = @_;
+    $superfeedr->pubsub_method('unsubscribe_node', @_);
+}
+
+sub pubsub_method {
+    my $superfeedr = shift;
+    my($method, @feed_uris) = @_;
+    my $cb = ref $feed_uris[-1] eq 'CODE' ? pop : sub { };
+
     my $pubsub = $superfeedr->xmpp_pubsub;
     unless ($pubsub) {
         $superfeedr->event(error => "no pubsub extension available");
@@ -167,13 +111,20 @@ sub unsubscribe {
         $superfeedr->event(error => "Wait to be connected");
         return;
     }
-    my $res_cb = sub {
-        my $err = shift;
-        $superfeedr->event(error => $err) if $err;
-    };
-    my $xmpp_uri = xmpp_node_uri($feed_uri);
-    $pubsub->unsubscribe_node($con, $xmpp_uri, $res_cb);
-    return;
+
+    for my $feed_uri (@feed_uris) {
+        my $res_cb = sub {
+            my $err = shift;
+            if ($err) {
+                $superfeedr->event(error => $err);
+            } else {
+                $cb->($feed_uri);
+            }
+        };
+
+        my $xmpp_uri = xmpp_node_uri($feed_uri);
+        $pubsub->$method($con, $xmpp_uri, $res_cb);
+    }
 }
 
 sub xmpp_node_uri {
@@ -216,11 +167,7 @@ AnyEvent::Superfeedr - XMPP interface to Superfeedr service.
 
   use AnyEvent::Superfeedr;
 
-  $end = AnyEvent->condvar;
-
-  ## receive 20 notifications and stop
-  $n = 0;
-  $callback = sub {
+  my $callback = sub {
       my Net::Superfeedr::Notification $notification = shift;
       my $feed_uri    = $notification->feed_uri;
       my $http_status = $notification->http_status;
@@ -230,22 +177,34 @@ AnyEvent::Superfeedr - XMPP interface to Superfeedr service.
       for my XML::Atom::Entry $entry ($notification->entries) {
           printf "Got: %s\n" $entry->title;
       }
-      $end->send if ++$n == 20;
   };
 
-  $superfeedr = AnyEvent::Superfeedr->new(
+  my $superfeedr = AnyEvent::Superfeedr->new(
       jid => $jid,
       password => $password
-      subscription => {
-          interval => 5,
-          sub_cb   => \%get_new_feeds,
-          unsub_cb => \%get_feeds2delete,
-      },
       on_notification => $callback,
   );
 
-  $superfeedr->subscribe($feed_uri);
-  $superfeedr->unsubscribe($feed_uri);
+  AnyEvent->condvar->recv;
+
+  # Subsribe upon connection
+  my $superfeedr; $superfeedr = AnyEvent::Superfeedr->new(
+      jid => $jid,
+      password => $password,
+      on_connect => sub {
+          $superfeed->subscribe($feed_uri);
+      },
+  );
+
+  # Periodically fetch new URLs from database and subscribe
+  my $timer = AnyEvent->timer(
+      after => 5,
+      interval => 5 * 60,
+      cb => sub {
+          my @new_feeds = get_new_feeds_from_database() or return;
+          $superfeedr->subscribe(@new_feeds);
+      },
+  );
 
   $end->recv;
 

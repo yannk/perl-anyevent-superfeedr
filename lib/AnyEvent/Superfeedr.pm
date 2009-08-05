@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.008_001;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 use Carp;
 
 use AnyEvent;
@@ -209,6 +209,8 @@ AnyEvent::Superfeedr - XMPP interface to Superfeedr service.
   $end->recv;
 
 =head1 DESCRIPTION
+
+WARNING: the interface is likely to change in the future.
 
 Allows you to subscribe to feeds and get notified real-time about new
 content.

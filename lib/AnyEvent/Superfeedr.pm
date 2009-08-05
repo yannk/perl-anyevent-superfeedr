@@ -168,7 +168,7 @@ AnyEvent::Superfeedr - XMPP interface to Superfeedr service.
   use AnyEvent::Superfeedr;
 
   my $callback = sub {
-      my Net::Superfeedr::Notification $notification = shift;
+      my AnyEvent::Superfeedr::Notification $notification = shift;
       my $feed_uri    = $notification->feed_uri;
       my $http_status = $notification->http_status;
       my $next_fetch  = $notification->next_fetch;

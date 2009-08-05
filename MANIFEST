@@ -1,11 +1,13 @@
 .gitignore
 Changes
+eg/import-opml.pl
 eg/print_feed_titles.pl
 eg/status_feed.pl
 inc/Module/Install.pm
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm
 inc/Module/Install/Fetch.pm
+inc/Module/Install/GithubMeta.pm
 inc/Module/Install/Include.pm
 inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
@@ -26,7 +28,6 @@ MANIFEST			This list of files
 META.yml
 README
 t/00_compile.t
-x.pl
 xt/perlcritic.t
 xt/pod.t
 xt/podspell.t

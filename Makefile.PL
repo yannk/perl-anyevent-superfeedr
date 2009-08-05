@@ -3,6 +3,11 @@ name 'AnyEvent-Superfeedr';
 all_from 'lib/AnyEvent/Superfeedr.pm';
 
 build_requires 'Test::More';
+requires 'AnyEvent';
+requires 'AnyEvent::XMPP';
+requires 'XML::Atom';
+requires 'Object::Tiny';
+requires 'URI::Escape';
 use_test_base;
 auto_include_deps;
 author_tests('xt');

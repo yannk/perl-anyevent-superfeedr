@@ -220,6 +220,10 @@ architectural needs.
 
 Yann Kerherve E<lt>yannk@cpan.orgE<gt>
 
+=head1 CONTRIBUTORS
+
+Tatsuhiko Miyagawa E<lt>miyagawa@bulknews.netE<gt>
+
 =head1 LICENSE
 
 This library is free software; you can redistribute it and/or modify

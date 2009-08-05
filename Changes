@@ -1,4 +1,12 @@
 Revision history for Perl extension AnyEvent::Superfeedr
 
+0.02  Wed Aug 5 15:55:00 2009
+        Some non backward compatible changes:
+        - Enabled bulk subscription with one subscribe()
+          call (Tatsuhiko Miyagawa)
+        - Allows callback to subscribe and unsubscribe. (Tatsuhiko Miyagawa)
+        - Removed subscription/unsubscription options in favor of user's own
+          timer (Tatsuhiko Miyagawa)
+
 0.01  Fri Jul 24 21:58:34 2009
         - Initial version that doesn't do much 

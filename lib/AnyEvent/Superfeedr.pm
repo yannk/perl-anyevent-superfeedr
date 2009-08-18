@@ -17,6 +17,8 @@ use URI::Escape();
 
 our $SERVICE = 'firehoser.superfeedr.com';
 
+use constant SUBSCRIBE_CHUNK_SIZE => 30;
+
 # TODO:
 # debug
 # tests? worthwhile?
@@ -88,18 +90,18 @@ sub new {
 
 sub subscribe {
     my $superfeedr = shift;
-    $superfeedr->pubsub_method('subscribe_node', @_);
+    $superfeedr->pubsub_method('subscribe_nodes', @_);
 }
 
 sub unsubscribe {
     my $superfeedr = shift;
-    $superfeedr->pubsub_method('unsubscribe_node', @_);
+    $superfeedr->pubsub_method('unsubscribe_nodes', @_);
 }
 
 sub pubsub_method {
     my $superfeedr = shift;
     my($method, @feed_uris) = @_;
-    my $cb = ref $feed_uris[-1] eq 'CODE' ? pop : sub { };
+    my $cb = ref $feed_uris[-1] eq 'CODE' ? pop @feed_uris : sub { };
 
     my $pubsub = $superfeedr->xmpp_pubsub;
     unless ($pubsub) {
@@ -112,19 +114,35 @@ sub pubsub_method {
         return;
     }
 
-    for my $feed_uri (@feed_uris) {
-        my $res_cb = sub {
-            my $err = shift;
-            if ($err) {
-                $superfeedr->event(error => $err);
-            } else {
-                $cb->($feed_uri);
-            }
-        };
+    my @chunk = splice @feed_uris, 0, SUBSCRIBE_CHUNK_SIZE;
 
-        my $xmpp_uri = xmpp_node_uri($feed_uri);
-        $pubsub->$method($con, $xmpp_uri, $res_cb);
-    }
+    my $res_cb;
+
+    my $chunk_cb = sub {
+        my ($chunk, $res_cb) = @_;
+        my @xmpp_uris = map { xmpp_node_uri($_) } @$chunk;
+        $pubsub->$method($con, \@xmpp_uris, $res_cb);
+    };
+
+    $res_cb = sub {
+        my $err = shift;
+        if ($err) {
+            $superfeedr->event(error => $err);
+            undef @chunk;
+            undef @feed_uris;
+        } else {
+            $cb->($_) for @chunk;
+            if (@feed_uris) {
+                @chunk = splice @feed_uris, 0, SUBSCRIBE_CHUNK_SIZE;
+                $chunk_cb->(\@chunk, $res_cb);
+            }
+            else {
+                undef $chunk_cb;
+                undef $res_cb;
+            }
+        }
+    };
+    $chunk_cb->(\@chunk, $res_cb);
 }
 
 sub xmpp_node_uri {

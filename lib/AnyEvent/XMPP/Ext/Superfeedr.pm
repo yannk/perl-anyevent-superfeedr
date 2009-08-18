@@ -5,6 +5,8 @@ use warnings;
 use AnyEvent::Superfeedr::Notification;
 use base qw/AnyEvent::XMPP::Ext::Pubsub/;
 
+use AnyEvent::XMPP::Util qw/simxml split_uri/;
+
 use constant NS => 'http://superfeedr.com/xmpp-pubsub-ext';
 
 =pod
@@ -59,6 +61,48 @@ sub handle_incoming_pubsub_event {
     );
     $self->event(pubsub_recv => @items);
     $self->event(superfeedr_notification => $notification);
+}
+
+sub subscribe_nodes {
+    my ($self, $con, $uris, $cb) = @_;
+    return $self->_pubsub_nodes('subscribe', $con, $uris, $cb);
+}
+
+sub unsubscribe_nodes {
+    my ($self, $con, $uris, $cb) = @_;
+    return $self->_pubsub_nodes('unsubscribe', $con, $uris, $cb);
+}
+
+sub _pubsub_nodes {
+    my ($self, $method, $con, $uris, $cb) = @_;
+
+    my $jid = $con->jid;
+
+    my @children;
+    my $service;
+    for (@$uris) {
+        ($service, my $node) = split_uri($_);
+        push @children, {
+            name => $method, attrs => [
+                node => $node,
+                jid => $jid,
+            ],
+        };
+    }
+
+    $con->send_iq (
+        set => sub {
+            my ($w) = @_;
+            simxml ($w, defns => 'pubsub', node => {
+                    name => 'pubsub', childs => \@children,
+            });
+        },
+        sub {
+            my ($node, $err) = @_;
+            $cb->(defined $err ? $err : ()) if $cb;
+        },
+        (defined $service ? (to => $service) : ())
+    );
 }
 
 1;

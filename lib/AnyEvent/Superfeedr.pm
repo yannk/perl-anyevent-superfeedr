@@ -30,7 +30,8 @@ sub new {
     my %param = @_;
 
     my %filtered;
-    for ( qw{jid password debug on_notification on_connect on_disconnect on_error} ) {
+    for ( qw{ jid password debug
+              on_notification on_connect on_disconnect on_error }) {
         $filtered{$_} = delete $param{$_};
     }
     croak "Unknown option(s): " . join ", ", keys %param if keys %param;
@@ -40,6 +41,10 @@ sub new {
         jid      => $filtered{jid},
         password => $filtered{password},
     }, ref $class || $class;
+
+    ## can be passed to connect() too
+    $superfeedr->{on_connect} = $filtered->{on_connect}
+        if $filtered->{on_connect};
 
     my $on_error = $filtered{on_error} || sub {
         my $err = shift;
@@ -62,13 +67,15 @@ sub new {
     $cl->reg_cb(
         error => $on_error,
         connected => sub {
-            $superfeedr->{xmpp_client} = $cl;
-            $filtered{on_connect}->() if $filtered{on_connect};
+            $superfeedr->{connected} = 1;
+            $superfeedr->{on_connect}->($superfeedr)
+                if $superfeedr->{on_connect};
         },
         disconnect => sub {
+            $superfeedr->{connected} = 0;
             (   $filtered{on_disconnect}
              || sub { warn "Got disconnected from $_[2]:$_[3], $_[4]" }
-            )->(@_);
+            )->($superfeedr, @_);
         },
         connect_error => sub {
             my ($cl, $account, $reason) = @_;
@@ -85,9 +92,22 @@ sub new {
             },
         );
     }
-    $cl->start;
-
+    $superfeedr->{xmpp_client} = $cl;
     return $superfeedr;
+}
+
+sub connect {
+    my $superfeedr = shift;
+    my $on_connect = shift;
+
+    my $cl = $superfeedr->{xmpp_client}
+        or return;
+    if ($cl->{connected}) {
+        $superfeedr->{on_error}->("Already connected");
+        return;
+    }
+    $superfeedr->{on_connect} = $on_connect if $on_connect;
+    $cl->start;
 }
 
 sub subscribe {
@@ -208,13 +228,11 @@ AnyEvent::Superfeedr - XMPP interface to Superfeedr service.
   AnyEvent->condvar->recv;
 
   # Subsribe upon connection
-  my $superfeedr; $superfeedr = AnyEvent::Superfeedr->new(
+  my $superfeedr = AnyEvent::Superfeedr->new(
       jid => $jid,
       password => $password,
-      on_connect => sub {
-          $superfeed->subscribe($feed_uri);
-      },
   );
+  $superfeedr->connect(sub { $superfeedr->subscribe($feed_uri) });
 
   # Periodically fetch new URLs from database and subscribe
   my $timer = AnyEvent->timer(

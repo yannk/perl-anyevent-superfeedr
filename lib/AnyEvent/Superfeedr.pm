@@ -71,7 +71,7 @@ sub new {
             )->(@_);
         },
         connect_error => sub {
-            my ($account, $reason) = @_;
+            my ($cl, $account, $reason) = @_;
             my $jid = $account->bare_jid;
             $on_error->("connection error for $jid: $reason");
         },

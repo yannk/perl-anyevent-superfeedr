@@ -66,7 +66,9 @@ sub new {
             $filtered{on_connect}->() if $filtered{on_connect};
         },
         disconnect => sub {
-            ($filtered{on_disconnect} || sub { warn "Got disconnected from $_[1]:$_[2]" })->(@_);
+            (   $filtered{on_disconnect}
+             || sub { warn "Got disconnected from $_[2]:$_[3], $_[4]" }
+            )->(@_);
         },
         connect_error => sub {
             my ($account, $reason) = @_;

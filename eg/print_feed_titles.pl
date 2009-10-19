@@ -34,4 +34,5 @@ my $sf = AnyEvent::Superfeedr->new(
         }
     },
 );
+$sf->connect;
 $end->recv;

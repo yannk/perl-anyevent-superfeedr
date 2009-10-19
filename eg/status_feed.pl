@@ -20,4 +20,5 @@ my $sf = AnyEvent::Superfeedr->new(
             $notification->next_fetch;
     },
 );
+$sf->connect;
 $end->recv;

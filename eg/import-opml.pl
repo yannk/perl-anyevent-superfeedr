@@ -18,10 +18,16 @@ my $superfeedr = AnyEvent::Superfeedr->new(
     password => $pass,
 );
 
-$superfeedr->connect;
-    on_connect => sub {
-        $superfeedr->subscribe(@feeds, sub { warn "Subscribed to $_[0]\n" });
-    },
+my $end = AnyEvent->condvar;
+$end->begin for @feeds;
+$superfeedr->connect( sub {
+    $superfeedr->subscribe(
+        @feeds => sub {
+            print STDERR "Subscribed to $_[0]\n";
+            $end->send;
+        }
+    );
+});
 
-AnyEvent->condvar->recv;
+$end->recv;
 

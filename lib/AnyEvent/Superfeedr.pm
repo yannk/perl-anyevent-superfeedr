@@ -43,8 +43,8 @@ sub new {
     }, ref $class || $class;
 
     ## can be passed to connect() too
-    $superfeedr->{on_connect} = $filtered->{on_connect}
-        if $filtered->{on_connect};
+    $superfeedr->{on_connect} = $filtered{on_connect}
+        if $filtered{on_connect};
 
     my $on_error = $filtered{on_error} || sub {
         my $err = shift;

@@ -224,7 +224,7 @@ AnyEvent::Superfeedr - XMPP interface to Superfeedr service.
       password => $password
       on_notification => $callback,
   );
-
+  $superfeedr->connect;
   AnyEvent->condvar->recv;
 
   # Subsribe upon connection
@@ -255,6 +255,10 @@ content.
 
 This is a first version of the api, and probably only covers specific
 architectural needs.
+
+=head1 EXAMPLES
+
+see in the eg/ directory of the distribution.
 
 =head1 AUTHOR
 

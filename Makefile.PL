@@ -11,6 +11,7 @@ requires 'URI::Escape';
 requires 'Net::SSLeay';
 requires 'Net::LibIDN';
 requires 'Scalar::Util';
+recommands 'XML::Twig';
 use_test_base;
 auto_include_deps;
 author_tests('xt');

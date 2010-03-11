@@ -47,8 +47,8 @@ sub new {
         if $filtered{on_connect};
 
     my $on_error = $filtered{on_error} || sub {
-        my $err = shift;
-        warn "Error: " . $err;
+        my ($cl, $acc, $err) = @_;
+        warn "Error: " . $err->string;
     };
 
     my $cl   = AnyEvent::XMPP::Client->new(

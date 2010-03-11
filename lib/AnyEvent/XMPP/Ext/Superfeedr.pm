@@ -49,7 +49,7 @@ sub handle_incoming_pubsub_event {
         $self->event(superfeedr_status => $status);
     }
     if ( my ($q) = $node->find_all([qw/ pubsub_ev items /]) ) {
-        foreach($q->find_all ([qw/pubsub_ev item/])) {
+        foreach ( $q->find_all([ qw/pubsub item /] )) {
             push @items, $_;
         }
     }

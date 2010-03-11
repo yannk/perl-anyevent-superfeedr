@@ -13,6 +13,7 @@ use AnyEvent::XMPP::Client;
 use AnyEvent::XMPP::Ext::Superfeedr;
 use AnyEvent::XMPP::Ext::Pubsub;
 use XML::Atom::Entry;
+use Scalar::Util();
 use URI::Escape();
 
 our $SERVICE = 'firehoser.superfeedr.com';
@@ -48,7 +49,12 @@ sub new {
 
     my $on_error = $filtered{on_error} || sub {
         my ($cl, $acc, $err) = @_;
-        warn "Error: " . $err->string;
+        if (Scalar::Util::blessed($err)) {
+            if ($err->isa('AnyEvent::XMPP::Error')) {
+                $err = $err->string;
+            }
+        }
+        warn "Error: " . $err;
     };
 
     my $cl   = AnyEvent::XMPP::Client->new(
@@ -80,7 +86,7 @@ sub new {
         connect_error => sub {
             my ($cl, $account, $reason) = @_;
             my $jid = $account->bare_jid;
-            $on_error->("connection error for $jid: $reason");
+            $on_error->($cl, $account, "connection error for $jid: $reason");
         },
     );
     if (my $on_notification = $filtered{on_notification} ) {
@@ -103,7 +109,7 @@ sub connect {
     my $cl = $superfeedr->{xmpp_client}
         or return;
     if ($cl->{connected}) {
-        $superfeedr->{on_error}->("Already connected");
+        $superfeedr->event(error => "Already connected");
         return;
     }
     $superfeedr->{on_connect} = $on_connect if $on_connect;

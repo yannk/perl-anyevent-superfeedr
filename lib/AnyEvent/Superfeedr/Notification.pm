@@ -3,8 +3,6 @@ use strict;
 use warnings;
 use XML::Atom::Entry;
 use XML::Atom::Feed;
-use URI();
-use URI::tag();
 use AnyEvent::Superfeedr();
 
 use Object::Tiny qw{ http_status next_fetch feed_uri items _entries};
@@ -66,11 +64,10 @@ sub tagify {
     $specific =~ s{^\w+://}{};
     $specific =~ tr{#}{/};
 
-    my $tag = URI->new("tag:");
-    $tag->authority($AnyEvent::Superfeedr::SERVICE);
-    $tag->date(sprintf "%4d-%02d-%02d", $year, $mon, $mday);
-    $tag->specific($specific);
-    return $tag->as_string;
+    return sprintf "tag:%s,%4d-%02d-%02d:%s",
+                   $AnyEvent::Superfeedr::SERVICE,
+                   $year, $mon, $mday,
+                   $specific;
 }
 
 1;

@@ -36,8 +36,15 @@ sub as_atom_feed {
 
 sub as_xml {
     my $notification = shift;
-    my $feed = $notification->as_atom_feed;
-    return $feed->as_xml;
+    my $feed = <<EOX;
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://purl.org/atom/ns#">
+EOX
+    for my $item (@{ $notification->items}) {
+        my ($entry) = $item->nodes;
+        $feed .= $entry->as_string;
+    }
+    $feed .= "</feed>";
 }
 
 1;

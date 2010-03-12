@@ -58,7 +58,7 @@ sub new {
     };
 
     my $cl   = AnyEvent::XMPP::Client->new(
-        debug => $superfeedr->{debug},
+        debug => $superfeedr->{debug} || 1,
     );
     my $pass = $superfeedr->{password};
     my $jid  = $superfeedr->{jid}

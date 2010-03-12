@@ -2,6 +2,7 @@ package AnyEvent::Superfeedr::Notification;
 use strict;
 use warnings;
 use XML::Atom::Entry;
+use XML::Atom::Feed;
 
 use Object::Tiny qw{ http_status next_fetch feed_uri items _entries};
 
@@ -22,6 +23,21 @@ sub entries {
     $notification->{items} = undef;
     $notification->{_entries} = \@entries;
     return @{ $notification->{_entries} };
+}
+
+sub as_atom_feed {
+    my $notification = shift;
+    my $feed = XML::Atom::Feed->new;
+    for ($notification->entries) {
+        $feed->add_entry($_);
+    }
+    return $feed;
+}
+
+sub as_xml {
+    my $notification = shift;
+    my $feed = $notification->as_atom_feed;
+    return $feed->as_xml;
 }
 
 1;

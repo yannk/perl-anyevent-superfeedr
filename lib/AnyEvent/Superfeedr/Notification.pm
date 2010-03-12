@@ -5,25 +5,43 @@ use XML::Atom::Entry;
 use XML::Atom::Feed;
 use AnyEvent::Superfeedr();
 
-use Object::Tiny qw{ http_status next_fetch feed_uri items _entries};
+use Object::Tiny qw{
+    http_status
+    next_fetch
+    feed_uri
+    items
+    _node_entries
+    _atom_entries
+};
+
+sub node_entries {
+    my $notification = shift;
+    my $node_entries = $notification->_node_entries;
+    return @$node_entries if $node_entries;
+
+    my @node_entries;
+    for my $item (@{ $notification->items }) {
+        ## each item as one entry
+        my ($node_entry) = $item->nodes;
+        push @node_entries, $node_entry;
+    }
+    $notification->{items} = undef;
+    $notification->{_node_entries} = \@node_entries;
+    return @node_entries;
+}
 
 sub entries {
     my $notification = shift;
-    my $entries = $notification->_entries;
-    return @$entries if $entries;
+    my $atom_entries = $notification->_atom_entries;
+    return @$atom_entries if $atom_entries;
 
-    my @entries;
-    for my $item (@{ $notification->items }) {
-        ## each item as one entry
-        my ($entry) = $item->nodes;
-        ## there must be more efficient ways? XXX
-        my $str = $entry->as_string;
-        my $ae = XML::Atom::Entry->new(Stream => \$str);
-        push @entries, $ae;
+    my @atom_entries;
+    for my $node_entry ($notification->node_entries) {
+        my $str = $node_entry->as_string;
+        my $atom_entry = XML::Atom::Entry->new(Stream => \$str);
+        push @atom_entries, $atom_entry;
     }
-    $notification->{items} = undef;
-    $notification->{_entries} = \@entries;
-    return @{ $notification->{_entries} };
+    return @{$notification->{_atom_entries} } = @atom_entries;
 }
 
 sub as_atom_feed {
@@ -45,11 +63,11 @@ sub as_xml {
 <id>$id</id>
 <link>$feed_uri</link>
 EOX
-    for my $item (@{ $notification->items}) {
-        my ($entry) = $item->nodes;
-        $feed .= $entry->as_string;
+    for my $node_entry ($notification->node_entries) {
+        $feed .= $node_entry->as_string;
     }
     $feed .= "</feed>";
+    return $feed;
 }
 
 sub tagify {

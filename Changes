@@ -4,6 +4,10 @@ Revision history for Perl extension AnyEvent::Superfeedr
         - [incompatible] change arguments of on_connect() (pass $superfeedr)
         - [incompatible] adds an explicit ->connect() that you have to call now
         - Fix an error reported by Tatsuhiko Miyagawa with connect errors
+        - Adds $notification->as_xml
+        - Fixes a problem where notifications would always be empty
+          Apparently Superfeedr changed some XML namespaces
+        - Other minor cleanups
 
 0.02  Wed Aug 5 15:55:00 2009
         Some non backward compatible changes:

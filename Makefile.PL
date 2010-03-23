@@ -1,3 +1,4 @@
+use strict;
 use inc::Module::Install;
 name 'AnyEvent-Superfeedr';
 all_from 'lib/AnyEvent/Superfeedr.pm';
@@ -5,7 +6,6 @@ all_from 'lib/AnyEvent/Superfeedr.pm';
 include('ExtUtils::AutoInstall');
 no_index(directory => 't');
 
-build_requires 'Test::More';
 requires 'AnyEvent';
 requires 'AnyEvent::XMPP';
 requires 'XML::Atom';

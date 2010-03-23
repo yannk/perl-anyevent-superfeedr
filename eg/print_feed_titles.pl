@@ -21,6 +21,7 @@ my $sf = AnyEvent::Superfeedr->new(
     #},
     on_notification => sub { 
         my $notification = shift;
+        warn $notification->as_xml;
         printf "%s: %s\n", $notification->title, $notification->feed_uri;
 
         for my $entry ($notification->entries) {

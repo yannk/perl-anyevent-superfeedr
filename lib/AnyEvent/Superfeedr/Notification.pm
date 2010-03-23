@@ -59,11 +59,13 @@ sub as_xml {
     my $id = $notification->tagify;
     my $feed_uri = _xml_encode($notification->feed_uri);
     my $title    = _xml_encode($notification->title);
+    my $now      = _now_as_w3c();
     my $feed = <<EOX;
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 <id>$id</id>
 <title>$title</title>
+<updated>$now</updated>
 <link href="$feed_uri" rel="self" />
 EOX
     for my $node_entry ($notification->node_entries) {
@@ -71,6 +73,12 @@ EOX
     }
     $feed .= "</feed>";
     return $feed;
+}
+
+sub _now_as_w3c {
+    my @time = gmtime;
+    sprintf '%4d-%02d-%02dT%02d:%02d:%02dZ',
+        $time[5]+1900, $time[4]+1, @time[3,2,1,0];
 }
 
 my %enc = ('&' => '&amp;', '"' => '&quot;', '<' => '&lt;', '>' => '&gt;', '\'' => '&#39;');

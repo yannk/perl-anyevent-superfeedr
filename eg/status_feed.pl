@@ -14,7 +14,8 @@ my $sf = AnyEvent::Superfeedr->new(
     password => shift,
     on_notification => sub { 
         my $notification = shift;
-        printf "Fetched %s [status=%s], next at %s\n",
+        printf "Fetched '%s' %s [status=%s], next at %s\n",
+            $notification->title,
             $notification->feed_uri,
             $notification->http_status,
             $notification->next_fetch;

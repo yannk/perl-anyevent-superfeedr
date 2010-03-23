@@ -31,19 +31,22 @@ sub handle_incoming_pubsub_event {
     my ($self, $node) = @_;
 
     my (@items, $status_node);
-    my ($code, $next_fetch, $feed_uri);
+    my ($code, $next_fetch, $title, $feed_uri);
 
     if ( ($status_node) = $node->find_all([NS, 'status'])) {
         my ($http_node)       = $status_node->find_all([NS, 'http' ]);
         my ($next_fetch_node) = $status_node->find_all([NS, 'next_fetch' ]);
+        my ($title_node)      = $status_node->find_all([NS, 'title' ]);
 
         $code       = $http_node       ? $http_node->attr('code') : undef;
         $next_fetch = $next_fetch_node ? $next_fetch_node->text   : undef;
+        $title      = $title_node      ? $title_node->text        : undef;
         $feed_uri   = $status_node->attr('feed');
 
         my $status = {
             http_status => $code,
             next_fecth  => $next_fetch,
+            title       => $title,
             feed_uri    => $feed_uri,
         };
         $self->event(superfeedr_status => $status);
@@ -56,6 +59,7 @@ sub handle_incoming_pubsub_event {
     my $notification = AnyEvent::Superfeedr::Notification->new(
         http_status => $code,
         next_fetch  => $next_fetch,
+        title       => $title,
         feed_uri    => $feed_uri,
         items       => [ @items ],
     );

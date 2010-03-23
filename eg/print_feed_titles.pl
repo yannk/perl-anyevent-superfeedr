@@ -10,6 +10,7 @@ binmode STDOUT, ":utf8";
 
 my $end = AnyEvent->condvar;
 my $sf = AnyEvent::Superfeedr->new(
+    debug => $ENV{DEBUG},
     jid => shift,
     password => shift,
     # bogus for my tests
@@ -20,6 +21,7 @@ my $sf = AnyEvent::Superfeedr->new(
     #},
     on_notification => sub { 
         my $notification = shift;
+        printf "%s: %s\n", $notification->title, $notification->feed_uri;
 
         for my $entry ($notification->entries) {
             my $title = Encode::decode_utf8($entry->title); 

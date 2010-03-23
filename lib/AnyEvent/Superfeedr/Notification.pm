@@ -10,6 +10,7 @@ use Object::Tiny qw{
     next_fetch
     feed_uri
     items
+    title
     _node_entries
     _atom_entries
 };

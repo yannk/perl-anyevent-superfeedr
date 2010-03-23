@@ -57,11 +57,13 @@ sub as_atom_feed {
 sub as_xml {
     my $notification = shift;
     my $id = $notification->tagify;
-    my $feed_uri = $notification->feed_uri;
+    my $feed_uri = _xml_encode($notification->feed_uri);
+    my $title    = _xml_encode($notification->title);
     my $feed = <<EOX;
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 <id>$id</id>
+<title>$title</title>
 <link href="$feed_uri" rel="self" />
 EOX
     for my $node_entry ($notification->node_entries) {
@@ -69,6 +71,14 @@ EOX
     }
     $feed .= "</feed>";
     return $feed;
+}
+
+my %enc = ('&' => '&amp;', '"' => '&quot;', '<' => '&lt;', '>' => '&gt;', '\'' => '&#39;');
+
+sub _xml_encode {
+    local $_ = shift;
+    s/([&"\'<>])/$enc{$1}/g;
+    $_;
 }
 
 sub tagify {

@@ -1,9 +1,9 @@
 .gitignore
 Changes
 eg/import-opml.pl
-eg/yann.opml
 eg/print_feed_titles.pl
 eg/status_feed.pl
+eg/yann.opml
 inc/Module/Install.pm
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm

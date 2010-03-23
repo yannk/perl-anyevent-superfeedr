@@ -61,7 +61,7 @@ sub as_xml {
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 <id>$id</id>
-<link href="$feed_uri" />
+<link href="$feed_uri" rel="self" />
 EOX
     for my $node_entry ($notification->node_entries) {
         $feed .= $node_entry->as_string;

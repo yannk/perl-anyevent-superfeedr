@@ -1,6 +1,6 @@
 Revision history for Perl extension AnyEvent::Superfeedr
 
-0.04
+0.04 Tue Mar 23 14:50:17 2010
         - Fixed Atom namespace in <feed> and added <title> and <updated> in $n->as_xml (miyagawa)
         - Added $notification->title attribute
 

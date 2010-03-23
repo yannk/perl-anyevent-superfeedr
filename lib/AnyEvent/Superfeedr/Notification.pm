@@ -59,7 +59,7 @@ sub as_xml {
     my $feed_uri = $notification->feed_uri;
     my $feed = <<EOX;
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://purl.org/atom/ns#">
+<feed xmlns="http://www.w3.org/2005/Atom">
 <id>$id</id>
 <link>$feed_uri</link>
 EOX

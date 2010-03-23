@@ -38,7 +38,7 @@ sub new {
     croak "Unknown option(s): " . join ", ", keys %param if keys %param;
 
     my $superfeedr = bless {
-        debug    => $filtered{debug} || 0,
+        debug    => $filtered{debug} || 1,
         jid      => $filtered{jid},
         password => $filtered{password},
     }, ref $class || $class;

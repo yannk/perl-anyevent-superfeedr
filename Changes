@@ -1,5 +1,9 @@
 Revision history for Perl extension AnyEvent::Superfeedr
 
+0.04
+        - Fixed Atom namespace in <feed> and added <title> and <updated> in $n->as_xml (miyagawa)
+        - Added $notification->title attribute
+
 0.03
         - [incompatible] change arguments of on_connect() (pass $superfeedr)
         - [incompatible] adds an explicit ->connect() that you have to call now

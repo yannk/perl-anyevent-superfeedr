@@ -1,1 +1,3 @@
-steps = MakeDist, UploadCPAN
+steps = FindVersion, ChangeVersion, CheckChangeLog, DistTest, Commit, Tag, MakeDist, UploadCPAN
+git.push_to = origin
+CheckChangeLog.files = Changes
